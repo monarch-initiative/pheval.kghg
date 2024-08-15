@@ -311,7 +311,7 @@ def get_phenotype_associations(input_path: str, output_path: str, nodes_path: st
                      ).to_csv(outname, sep='\t', header=True, index=False)
         
         processed += 1
-        if processed % 20:
+        if processed % 20 == 0:
             print("- Processed {}/{} samples...".format(format(processed, ','), format(len(infiles), ',')))
 
     

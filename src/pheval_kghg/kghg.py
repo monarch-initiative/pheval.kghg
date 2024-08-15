@@ -171,10 +171,7 @@ def hyper_geom(x, M, n, N):
     return prob
 
 
-def phen_to_disease_hg_tests(dis_to_hp: dict[str:set], lookup_terms: set, M: int) -> list:
-    """
-    Generates a pvalue for each input disease node. The dis_to_hp 
-    """
+def phen_to_disease_hg_tests(dis_to_hp: dict[str:set], hp_to_dis: dict[str:set], lookup_terms: set, M: int) -> list:
     
     # Preformat lookup terms
     if type(lookup_terms) != type(set()):
@@ -183,9 +180,18 @@ def phen_to_disease_hg_tests(dis_to_hp: dict[str:set], lookup_terms: set, M: int
     # Hyper geometric param
     N = len(lookup_terms)
     
-    # Loop through each available disease, and its set of hp terms and test for significance of overlap with lookup_terms
+    
+    # Pull out only diseases that have a chance of being associated (i.e. minimum overlap of 1 hp term)
+    pdis = set()
+    for p in lookup_terms:
+        if p not in hp_to_dis:
+            continue
+        pdis = pdis | hp_to_dis[p]
+    
+    # Loop through smaller subset rather than the whole possible world
     dis_associations = []
-    for d, hp_dis in dis_to_hp.items():
+    for d in pdis:
+        hp_dis = dis_to_hp[d]
         overlap = lookup_terms & hp_dis
         x = len(overlap)
         n = len(hp_dis)
@@ -268,6 +274,9 @@ def get_phenotype_associations(input_path: str, output_path: str, nodes_path: st
     dis_to_hp = {d:set([nn for nn in list(graph.neighbors(d)) 
                         if graph.nodes[nn]['category'] == "biolink:PhenotypicFeature"]) for d in dis_nodes}
     
+    hp_to_dis = {p:set([nn for nn in list(graph.neighbors(p)) 
+                    if graph.nodes[nn]['category'] == "biolink:Disease"]) for p in phen_nodes}
+    
     # Generate disease --> gene mapping (currently not unused)
     #dis_to_gene = {d:set([graph.nodes[nn]['name'] for nn in list(graph.neighbors(d)) 
     #                    if graph.nodes[nn]['category'] == "biolink:Gene"]) for d in dis_nodes}
@@ -293,8 +302,9 @@ def get_phenotype_associations(input_path: str, output_path: str, nodes_path: st
         phenotype_ids = [observed_phenotype.type.id for observed_phenotype in observed_phenotypes]
         
         # Generate sorted list (ranked) set of disease ids based on lowest pvalue
-        results = phen_to_disease_hg_tests(dis_to_hp=dis_to_hp, 
-                                           lookup_terms=set(phenotype_ids), 
+        results = phen_to_disease_hg_tests(dis_to_hp=dis_to_hp,
+                                           hp_to_dis=hp_to_dis, 
+                                           lookup_terms=set(phenotype_ids),
                                            M=M)
 
         # Results are originally in form of [[disease_id, pval, x, M, n, N], ...]

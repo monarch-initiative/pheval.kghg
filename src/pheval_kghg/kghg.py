@@ -311,8 +311,9 @@ def get_phenotype_associations(input_path: str, output_path: str, nodes_path: st
                      ).to_csv(outname, sep='\t', header=True, index=False)
         
         processed += 1
-        if processed >= 10:
-            break
+        if processed % 20:
+            print("- Processed {}/{} samples...".format(format(processed, ','), format(len(infiles), ',')))
+
     
     print("- Successfully processed {}/{} samples".format(format(processed, ','), format(len(infiles), ',')))
 

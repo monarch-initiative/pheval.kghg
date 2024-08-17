@@ -27,10 +27,13 @@ def convert_to_pheval_disease_results(res_path: str, output_dir: str):
                                    score=float(d[1])) for d in zip(ranks, pvals, names, ids)]
         
     # Now leverage pheval to write disease results to disease results directory with accompanying filename suffixs
+    # Note, that we need to format samplename_results.tsv --> samplename.tsv so that the pheval post_processing .stem
+    # function will pull in the appropriate sample name
+    tool_res_path = Path(res_path.replace("_results", ''))
     pheval_res = generate_pheval_result(pheval_result=results,
                                         sort_order_str='ascending', # We want lowest pvalue to highest
                                         output_dir=output_dir,
-                                        tool_result_path=Path(res_path.split("_results.tsv")[0]))
+                                        tool_result_path=tool_res_path)
         
 
 def raw_results_to_pheval(raw_results_dir: str, 
@@ -38,6 +41,11 @@ def raw_results_to_pheval(raw_results_dir: str,
                           disease_analysis: bool=True, 
                           gene_analysis: bool=False, 
                           variant_analysis: bool=False):
+
+    """
+    Converts disease results file from kghg to a pheval benchmarking compatible version across all files in the
+    raw_results_dir. Results are then written to the pheval_disease_results directory
+    """
 
     # Disease results
     if disease_analysis == True:
